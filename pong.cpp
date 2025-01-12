@@ -193,6 +193,7 @@ LTexture gScoreTexture; //the texture used to display the score
 int init(); //initializes libraries
 bool loadMedia(); //loads textures, fonts, &c.
 void moveEntity(Entity *en); //moves entity on rendered screen
+void resetPuck();
 void close(); //frees memory from SDL libraries
 
 /* function definitions */
@@ -261,6 +262,13 @@ void moveEntity(Entity *en)
                 }
         }
 }
+
+void resetPuck()
+{
+        puck.rect.x = 530;
+        puck.rect.y = 350;
+}
+
 
 void close()
 {
@@ -363,14 +371,12 @@ int main()
 
                 if (puck.rect.x > rPaddle.rect.x + rPaddle.rect.w) {
                         lScore++;
-                        puck.rect.x = 530;
-                        puck.rect.y = 350;
+                        resetPuck();
                         printf("Left: %u, Right: %u\n", lScore, rScore);
                 }
                 if (puck.rect.x + puck.rect.w < lPaddle.rect.x) {
                         rScore++;
-                        puck.rect.x = 530;
-                        puck.rect.y = 350;
+                        resetPuck();
                         printf("Left: %u, Right: %u\n", lScore, rScore);
                 }
                 scoreDisplayText.str("");
