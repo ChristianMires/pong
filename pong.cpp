@@ -186,7 +186,141 @@ int LTexture::getHeight()
 
 LTexture gScoreTexture; //the texture used to display the score
 
+//The application time based timer
+class LTimer
+{
+	public:
+		//Initializes variables
+		LTimer();
 
+		//The various clock actions
+		void start();
+		void stop();
+		void pause();
+		void unpause();
+
+		//Gets the timer's time
+		Uint32 getTicks();
+
+		//Checks the status of the timer
+		bool isStarted();
+		bool isPaused();
+
+	private:
+		//The clock time when the timer started
+		Uint32 mStartTicks;
+
+		//The ticks stored when the timer was paused
+		Uint32 mPausedTicks;
+
+		//The timer status
+		bool mPaused;
+		bool mStarted;
+};
+
+LTimer::LTimer()
+{
+	//Initialize the variables
+	mStartTicks = 0;
+	mPausedTicks = 0;
+
+	mPaused = false;
+	mStarted = false;
+}
+
+void LTimer::start()
+{
+	//Start the timer
+	mStarted = true;
+
+	//Unpause the timer
+	mPaused = false;
+
+	//Get the current clock time
+	mStartTicks = SDL_GetTicks();
+	mPausedTicks = 0;
+}
+
+void LTimer::stop()
+{
+	//Stop the timer
+	mStarted = false;
+
+	//Unpause the timer
+	mPaused = false;
+
+	//Clear tick variables
+	mStartTicks = 0;
+	mPausedTicks = 0;
+}
+
+void LTimer::pause()
+{
+	//If the timer is running and isn't already paused
+	if( mStarted && !mPaused )
+	{
+		//Pause the timer
+		mPaused = true;
+
+		//Calculate the paused ticks
+		mPausedTicks = SDL_GetTicks() - mStartTicks;
+		mStartTicks = 0;
+	}
+}
+
+void LTimer::unpause()
+{
+	//If the timer is running and paused
+	if( mStarted && mPaused )
+	{
+		//Unpause the timer
+		mPaused = false;
+
+		//Reset the starting ticks
+		mStartTicks = SDL_GetTicks() - mPausedTicks;
+
+		//Reset the paused ticks
+		mPausedTicks = 0;
+	}
+}
+
+Uint32 LTimer::getTicks()
+{
+	//The actual timer time
+	Uint32 time = 0;
+
+	//If the timer is running
+	if( mStarted )
+	{
+		//If the timer is paused
+		if( mPaused )
+		{
+			//Return the number of ticks when the timer was paused
+			time = mPausedTicks;
+		}
+		else
+		{
+			//Return the current time minus the start time
+			time = SDL_GetTicks() - mStartTicks;
+		}
+	}
+
+	return time;
+}
+
+bool LTimer::isStarted()
+{
+	//Timer is running and paused or unpaused
+	return mStarted;
+}
+
+bool LTimer::isPaused()
+{
+	//Timer is running and paused
+	return mPaused && mStarted;
+}
+
+LTimer timer; // keeps track of the application time
 
 
 /* function declarations */
@@ -246,19 +380,21 @@ bool loadMedia()
 
 void moveEntity(Entity *en)
 {
-        en->rect.x += en->xVel;
-        if (en->rect.x > SCREEN_WIDTH || en->rect.x < 0 - en->rect.w) {
-                en->rect.x -= en->xVel;
-                if (en->hasBounce) {
-                        en->xVel *= -1;
+        if (!timer.isPaused()) {
+                en->rect.x += en->xVel;
+                if (en->rect.x > SCREEN_WIDTH || en->rect.x < 0 - en->rect.w) {
+                        en->rect.x -= en->xVel;
+                        if (en->hasBounce) {
+                                en->xVel *= -1;
+                        }
                 }
-        }
 
-        en->rect.y += en->yVel;
-        if (en->rect.y + en->rect.h > SCREEN_HEIGHT || en->rect.y < 0) {
-                en->rect.y -= en->yVel;
-                if (en->hasBounce) {
-                        en->yVel *= -1;
+                en->rect.y += en->yVel;
+                if (en->rect.y + en->rect.h > SCREEN_HEIGHT || en->rect.y < 0) {
+                        en->rect.y -= en->yVel;
+                        if (en->hasBounce) {
+                                en->yVel *= -1;
+                        }
                 }
         }
 }
@@ -267,6 +403,7 @@ void resetPuck()
 {
         puck.rect.x = 530;
         puck.rect.y = 350;
+        timer.stop();
 }
 
 
@@ -295,6 +432,7 @@ int main()
 {
         /* setup */
         lScore = rScore = 0;
+        timer.start();
 
         int i;
         if ((i=init()) == 0) {
@@ -339,6 +477,21 @@ int main()
                         /* user requests quit */
                         if (e.type == SDL_QUIT) {
                                 quit = true;
+                        }
+                        else if (e.type == SDL_KEYDOWN) {
+                                // Start/stop timer
+                                if (e.key.keysym.sym == SDLK_SPACE) {
+                                        if (timer.isStarted())
+                                                timer.stop();
+                                        else
+                                                timer.start();
+                                }
+                                else if (e.key.keysym.sym == SDLK_p) {
+                                        if (timer.isPaused())
+                                                timer.unpause();
+                                        else
+                                                timer.pause();
+                                }
                         }
                 }
 
